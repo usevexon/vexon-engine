@@ -7,6 +7,8 @@ import { hybridSearch } from '../src/hybrid.js';
 import { loadEmbedder } from '../src/embedder.js';
 import { ensureVectors } from '../src/vectors.js';
 import { trimToBudget } from '../src/budget.js';
+import { captureFromHook } from '../src/capture.js';
+import { serveStdio } from '../src/mcp.js';
 import { readFile } from 'node:fs/promises';
 
 const args = process.argv.slice(2);
@@ -40,7 +42,9 @@ const USAGE = `usage:
   vexon note "<title>" [text] [--tag t]  save a note
   vexon list                             list saved notes
   vexon recall "<query>" [--limit n]     best notes for a query, within the token budget
-  vexon search "<query>" [--limit n]     same ranking, one line per note`;
+  vexon search "<query>" [--limit n]     same ranking, one line per note
+  vexon capture                          read a Claude Code hook event on stdin
+  vexon mcp                              serve recall and capture over MCP (stdio)`;
 
 async function main() {
   switch (cmd) {
@@ -74,6 +78,25 @@ async function main() {
       if (!kept.length) console.log('no matches');
       for (const h of kept) console.log(h.text + '\n');
       console.error(`(${used} tokens of ${config.tokenBudget ?? 3000})`);
+      return;
+    }
+    case 'capture': {
+      // Hook command: always exit 0 so a capture problem never blocks the agent.
+      try {
+        const raw = await new Promise((res) => {
+          let buf = '';
+          process.stdin.on('data', (c) => (buf += c));
+          process.stdin.on('end', () => res(buf));
+        });
+        const cap = captureFromHook(JSON.parse(raw || '{}'));
+        if (cap) await addNote(dir, cap);
+      } catch (err) {
+        console.error(`vexon capture: ${err.message}`);
+      }
+      return;
+    }
+    case 'mcp': {
+      await serveStdio(dir);
       return;
     }
     case 'search': {
