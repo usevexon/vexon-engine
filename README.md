@@ -1,5 +1,7 @@
 # Vexon engine
 
+> Status: M1 to M3 done. Secret scrubbing is in place (M4). Not published to npm yet.
+
 Local-first memory for AI agents. Notes are plain Markdown files on disk.
 
 ```
@@ -63,3 +65,11 @@ Cursor: add to `~/.cursor/hooks.json`. The command answers `{"continue": true}`,
   }
 }
 ```
+
+## Privacy
+
+Before any note is written, and before any text goes to the embedding model,
+secrets are replaced with `[REDACTED:<kind>]`. Covered: private keys, AWS, GitHub,
+Anthropic, OpenAI, Slack, Stripe and Google keys, JWTs, bearer tokens, URL
+credentials, and `password`/`secret`/`token`/`api_key` assignments. Pattern
+matching is not a guarantee: do not rely on it for real security.

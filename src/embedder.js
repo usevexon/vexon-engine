@@ -5,6 +5,7 @@ import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
 import { readFile, mkdir, symlink, access } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
+import { scrub } from './scrub.js';
 
 const require = createRequire(import.meta.url);
 const MODEL_ID = 'Xenova/all-MiniLM-L6-v2';
@@ -63,8 +64,9 @@ export async function loadEmbedder(storeDir) {
   env.localModelPath = await stageModel(pkgDir, storeDir);
   const extractor = await pipeline('feature-extraction', MODEL_ID, { dtype: 'fp32' });
 
+  // Every model call goes through here, so secrets are removed before embedding.
   return async (text) => {
-    const out = await extractor(text, { pooling: 'mean', normalize: true });
+    const out = await extractor(scrub(text), { pooling: 'mean', normalize: true });
     return Array.from(out.data);
   };
 }

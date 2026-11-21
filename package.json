@@ -3,7 +3,6 @@
   "version": "0.0.1",
   "description": "Local-first memory for AI agents.",
   "license": "MIT",
-  "private": true,
   "type": "module",
   "bin": {
     "vexon": "bin/vexon.js"
@@ -20,5 +19,23 @@
     "@maycombhq/embed-model": "2.0.0-beta.1",
     "@modelcontextprotocol/sdk": "1.32.2",
     "zod": "4.6.7"
-  }
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/usevexon/vexon-engine.git"
+  },
+  "homepage": "https://www.getvexon.live",
+  "keywords": [
+    "memory",
+    "agents",
+    "mcp",
+    "local-first",
+    "embeddings"
+  ]
 }

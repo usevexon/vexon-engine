@@ -3,6 +3,7 @@
 import { mkdir, readFile, readdir, writeFile, access } from 'node:fs/promises';
 import { join, basename } from 'node:path';
 import { randomBytes } from 'node:crypto';
+import { scrub } from './scrub.js';
 
 export const NOTES = 'notes';
 
@@ -49,6 +50,9 @@ export function parse(text) {
 }
 
 export async function addNote(dir, { title, body, tags }) {
+  title = scrub(title);
+  body = scrub(body ?? '');
+  tags = (tags ?? []).map(scrub);
   const created = new Date().toISOString();
   const stamp = created.replace(/[-:.TZ]/g, '').slice(0, 14);
   const id = `${stamp}-${slug(title)}-${randomBytes(2).toString('hex')}`;
@@ -75,6 +79,9 @@ const stamp = () => new Date().toISOString().replace(/[-:.TZ]/g, '') + '-' + ran
 
 export async function updateNote(dir, id, patch) {
   const file = join(dir, NOTES, `${id}.md`);
+  if (patch.title !== undefined) patch = { ...patch, title: scrub(patch.title) };
+  if (patch.body !== undefined) patch = { ...patch, body: scrub(patch.body) };
+  if (patch.tags !== undefined) patch = { ...patch, tags: patch.tags.map(scrub) };
   const current = parse(await readFile(file, 'utf8'));
   const histDir = join(dir, HISTORY, id);
   await mkdir(histDir, { recursive: true });
