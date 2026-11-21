@@ -8,6 +8,9 @@ import { loadEmbedder } from '../src/embedder.js';
 import { ensureVectors } from '../src/vectors.js';
 import { trimToBudget } from '../src/budget.js';
 import { captureFromHook } from '../src/capture.js';
+import { findProposals, writeProposals, listProposals } from '../src/dream.js';
+import { applyMerge, undoLast, addedLines } from '../src/apply.js';
+import { rm } from 'node:fs/promises';
 import { serveStdio } from '../src/mcp.js';
 import { readFile } from 'node:fs/promises';
 
@@ -45,7 +48,11 @@ const USAGE = `usage:
   vexon search "<query>" [--limit n]     same ranking, one line per note
   vexon capture                          read a Claude Code hook event on stdin
   vexon mcp                              serve recall and capture over MCP (stdio)
-  vexon history <note-id>                list saved versions of a note`;
+  vexon history <note-id>                list saved versions of a note
+  vexon dream                            propose merges and conflicts (writes proposals only)
+  vexon proposals                        list proposals
+  vexon apply <proposal-id>              apply a merge proposal (journaled)
+  vexon undo                             undo the last applied change`;
 
 async function main() {
   switch (cmd) {
@@ -106,6 +113,49 @@ async function main() {
       const versions = await listVersions(dir, id);
       if (!versions.length) console.log('no earlier versions');
       for (const v of versions) console.log(v);
+      return;
+    }
+    case 'dream': {
+      const notes = await listNotes(dir);
+      let vectors = new Map();
+      try {
+        const embed = await loadEmbedder(dir);
+        vectors = await ensureVectors(dir, notes, embed);
+      } catch (err) {
+        console.error(`vexon: no embeddings (${err.message}); conflicts only`);
+      }
+      const ids = await writeProposals(dir, findProposals(notes, vectors));
+      console.log(ids.length ? `${ids.length} proposal(s) written. Run: vexon proposals` : 'nothing to propose');
+      return;
+    }
+    case 'proposals': {
+      const ps = await listProposals(dir);
+      if (!ps.length) console.log('no proposals');
+      for (const p of ps) {
+        if (p.kind === 'merge') {
+          console.log(`${p.id}  merge ${p.drop} into ${p.keep}  (similarity ${p.score})`);
+          const notes = await listNotes(dir);
+          const keep = notes.find((n) => n.id === p.keep), drop = notes.find((n) => n.id === p.drop);
+          if (keep && drop) for (const line of addedLines(keep.body, drop.body)) console.log(`    + ${line}`);
+        }
+        else console.log(`${p.id}  conflict ${p.a} vs ${p.b}: ${p.note}`);
+      }
+      return;
+    }
+    case 'apply': {
+      const [pid] = rest;
+      if (!pid) throw new Error('give a proposal id: vexon apply <proposal-id>');
+      const p = (await listProposals(dir)).find((x) => x.id === pid);
+      if (!p) throw new Error(`no proposal ${pid}`);
+      if (p.kind !== 'merge') throw new Error('only merge proposals can be applied; conflicts are reviewed by hand');
+      const r = await applyMerge(dir, p, await listNotes(dir));
+      await rm(join(dir, 'proposals', `${p.id}.json`), { force: true });
+      console.log(`merged ${r.archived} into ${r.keep}; run vexon undo to reverse`);
+      return;
+    }
+    case 'undo': {
+      const entry = await undoLast(dir);
+      console.log(entry ? `undid ${entry.kind} (${entry.changes.length} file change(s))` : 'nothing to undo');
       return;
     }
     case 'mcp': {

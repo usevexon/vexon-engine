@@ -73,3 +73,15 @@ secrets are replaced with `[REDACTED:<kind>]`. Covered: private keys, AWS, GitHu
 Anthropic, OpenAI, Slack, Stripe and Google keys, JWTs, bearer tokens, URL
 credentials, and `password`/`secret`/`token`/`api_key` assignments. Pattern
 matching is not a guarantee: do not rely on it for real security.
+
+## Dreams, apply, undo
+
+- `vexon dream` finds near-duplicate notes (similarity 0.9 or more) and same-titled notes that
+  disagree. It writes proposals to `proposals/` and never edits a note.
+- `vexon proposals` lists them. A merge shows the lines it would add.
+- `vexon apply <id>` merges the shorter note into the longer one. The shorter note moves to `archive/`.
+  Each change is written to `journal/` first.
+- `vexon undo` reverses the last applied change from the journal.
+
+Dreams are embedding-based for now. They do not rewrite text with a language model, and they do
+not detect stale facts yet.
