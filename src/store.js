@@ -66,3 +66,30 @@ export async function listNotes(dir) {
   }
   return notes;
 }
+
+// Versioned writes: before a note changes, its previous text is kept under
+// history/<id>/, so any change can be read back or undone.
+export const HISTORY = 'history';
+
+const stamp = () => new Date().toISOString().replace(/[-:.TZ]/g, '') + '-' + randomBytes(2).toString('hex');
+
+export async function updateNote(dir, id, patch) {
+  const file = join(dir, NOTES, `${id}.md`);
+  const current = parse(await readFile(file, 'utf8'));
+  const histDir = join(dir, HISTORY, id);
+  await mkdir(histDir, { recursive: true });
+  await writeFile(join(histDir, `${stamp()}.md`), await readFile(file, 'utf8'), { flag: 'wx' });
+  const next = {
+    title: patch.title ?? current.title,
+    body: patch.body ?? current.body,
+    tags: patch.tags ?? current.tags,
+    created: current.created,
+  };
+  await writeFile(file, serialize(next));
+  return { id, file };
+}
+
+export async function listVersions(dir, id) {
+  const names = await readdir(join(dir, HISTORY, id)).catch(() => []);
+  return names.filter((n) => n.endsWith('.md')).sort();
+}

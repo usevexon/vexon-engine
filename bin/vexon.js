@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { init, addNote, listNotes } from '../src/store.js';
+import { init, addNote, listNotes, listVersions } from '../src/store.js';
 import { search } from '../src/search.js';
 import { hybridSearch } from '../src/hybrid.js';
 import { loadEmbedder } from '../src/embedder.js';
@@ -44,7 +44,8 @@ const USAGE = `usage:
   vexon recall "<query>" [--limit n]     best notes for a query, within the token budget
   vexon search "<query>" [--limit n]     same ranking, one line per note
   vexon capture                          read a Claude Code hook event on stdin
-  vexon mcp                              serve recall and capture over MCP (stdio)`;
+  vexon mcp                              serve recall and capture over MCP (stdio)
+  vexon history <note-id>                list saved versions of a note`;
 
 async function main() {
   switch (cmd) {
@@ -97,6 +98,14 @@ async function main() {
       // Cursor needs a JSON answer on stdout to let the prompt continue. Other
       // agents must get nothing on stdout, since plain stdout becomes prompt context.
       if (payload?.hook_event_name === 'beforeSubmitPrompt') process.stdout.write('{"continue": true}\n');
+      return;
+    }
+    case 'history': {
+      const [id] = rest;
+      if (!id) throw new Error('give a note id: vexon history <note-id>');
+      const versions = await listVersions(dir, id);
+      if (!versions.length) console.log('no earlier versions');
+      for (const v of versions) console.log(v);
       return;
     }
     case 'mcp': {
