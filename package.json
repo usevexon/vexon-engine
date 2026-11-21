@@ -1,0 +1,14 @@
+{
+  "name": "vexon",
+  "version": "0.0.1",
+  "description": "Local-first memory for AI agents.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "bin": { "vexon": "bin/vexon.js" },
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "start": "node bin/vexon.js"
+  }
+}

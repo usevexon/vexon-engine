@@ -1,0 +1,68 @@
+// Notes are plain Markdown files with a small YAML-style front matter block.
+// One file per note, so users can read, edit, diff and delete them with any tool.
+import { mkdir, readFile, readdir, writeFile, access } from 'node:fs/promises';
+import { join, basename } from 'node:path';
+import { randomBytes } from 'node:crypto';
+
+export const NOTES = 'notes';
+
+export async function init(dir) {
+  await mkdir(join(dir, NOTES), { recursive: true });
+  const config = join(dir, 'config.json');
+  try {
+    await access(config);
+  } catch {
+    await writeFile(config, JSON.stringify({ version: 1, tokenBudget: 3000 }, null, 2) + '\n');
+  }
+  return dir;
+}
+
+const slug = (s) =>
+  s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'note';
+
+export function serialize({ title, body = '', tags = [], created }) {
+  const front = [
+    '---',
+    `title: ${JSON.stringify(title)}`,
+    `created: ${created}`,
+    `tags: [${tags.map((t) => JSON.stringify(t)).join(', ')}]`,
+    '---',
+    '',
+  ].join('\n');
+  return front + body.replace(/\s+$/, '') + '\n';
+}
+
+export function parse(text) {
+  const m = text.match(/^---\n([\s\S]*?)\n---\n\n?([\s\S]*)$/);
+  if (!m) throw new Error('note is missing front matter');
+  const meta = {};
+  for (const line of m[1].split('\n')) {
+    const i = line.indexOf(':');
+    if (i < 0) continue;
+    const key = line.slice(0, i).trim();
+    const raw = line.slice(i + 1).trim();
+    if (key === 'tags') meta.tags = JSON.parse(raw.replace(/^\[(.*)\]$/, '[$1]'));
+    else if (key === 'title') meta.title = JSON.parse(raw);
+    else meta[key] = raw;
+  }
+  return { ...meta, tags: meta.tags ?? [], body: m[2].replace(/\s+$/, '') + '\n' };
+}
+
+export async function addNote(dir, { title, body, tags }) {
+  const created = new Date().toISOString();
+  const stamp = created.replace(/[-:.TZ]/g, '').slice(0, 14);
+  const id = `${stamp}-${slug(title)}-${randomBytes(2).toString('hex')}`;
+  const file = join(dir, NOTES, `${id}.md`);
+  await writeFile(file, serialize({ title, body, tags, created }), { flag: 'wx' });
+  return { id, file };
+}
+
+export async function listNotes(dir) {
+  const names = await readdir(join(dir, NOTES)).catch(() => []);
+  const notes = [];
+  for (const name of names.filter((n) => n.endsWith('.md')).sort()) {
+    const file = join(dir, NOTES, name);
+    notes.push({ id: basename(name, '.md'), file, ...parse(await readFile(file, 'utf8')) });
+  }
+  return notes;
+}
