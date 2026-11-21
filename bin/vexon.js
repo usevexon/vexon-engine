@@ -3,6 +3,9 @@ import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { init, addNote, listNotes } from '../src/store.js';
 import { search } from '../src/search.js';
+import { hybridSearch } from '../src/hybrid.js';
+import { loadEmbedder } from '../src/embedder.js';
+import { ensureVectors } from '../src/vectors.js';
 
 const args = process.argv.slice(2);
 const flag = (name, fallback) => {
@@ -49,7 +52,17 @@ async function main() {
       const query = rest.join(' ');
       if (!query) throw new Error('give a query: vexon search "<query>"');
       const limit = Number(flag('--limit', 5));
-      const hits = search(await listNotes(dir), query, { limit });
+      const notes = await listNotes(dir);
+      // Hybrid when the local model loads; keyword-only if it does not.
+      let hits;
+      try {
+        const embed = await loadEmbedder(dir);
+        const vectors = await ensureVectors(dir, notes, embed);
+        hits = await hybridSearch(notes, query, { embed, vectors, limit });
+      } catch (err) {
+        console.error(`vexon: semantic search off (${err.message}); using keywords`);
+        hits = search(notes, query, { limit });
+      }
       if (!hits.length) console.log('no matches');
       for (const h of hits) console.log(`${h.score.toFixed(2)}  ${h.note.title}  (${h.note.file})`);
       return;

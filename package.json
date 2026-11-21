@@ -5,10 +5,18 @@
   "license": "MIT",
   "private": true,
   "type": "module",
-  "bin": { "vexon": "bin/vexon.js" },
-  "engines": { "node": ">=22" },
+  "bin": {
+    "vexon": "bin/vexon.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "test": "node --test test/*.test.js",
     "start": "node bin/vexon.js"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "4.3.2",
+    "@maycombhq/embed-model": "2.0.0-beta.1"
   }
 }
