@@ -19,6 +19,17 @@ Semantic search uses all-MiniLM-L6-v2 (Apache-2.0) from the npm package
 files against the package's `pins.json`. Vectors are cached in `vectors.json`
 in the store. If the model fails to load, search falls back to keywords.
 
+## Quick start
+
+```sh
+npx vexon init                      # creates ~/.vexon (notes, config, history)
+npx vexon note "Staging DB port" "The staging database runs on port 5433." --tag ops
+npx vexon recall "where is staging"  # best matches, trimmed to the token budget
+```
+
+Notes are plain Markdown files in `~/.vexon/notes/`. Edit them with any editor.
+Set `VEXON_DIR` or pass `--dir <path>` to use another folder.
+
 ## Capture from Claude Code
 
 Add this to `~/.claude/settings.json`. Only prompts that start with `remember:` are saved.
