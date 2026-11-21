@@ -82,17 +82,21 @@ async function main() {
     }
     case 'capture': {
       // Hook command: always exit 0 so a capture problem never blocks the agent.
+      let payload = null;
       try {
-        const raw = await new Promise((res) => {
-          let buf = '';
-          process.stdin.on('data', (c) => (buf += c));
-          process.stdin.on('end', () => res(buf));
-        });
-        const cap = captureFromHook(JSON.parse(raw || '{}'));
+        // Read bytes and decode once as UTF-8, so Windows pipes do not mangle text.
+        const chunks = [];
+        for await (const c of process.stdin) chunks.push(c);
+        const raw = Buffer.concat(chunks).toString('utf8').replace(/^\uFEFF/, '');
+        payload = JSON.parse(raw || '{}');
+        const cap = captureFromHook(payload);
         if (cap) await addNote(dir, cap);
       } catch (err) {
         console.error(`vexon capture: ${err.message}`);
       }
+      // Cursor needs a JSON answer on stdout to let the prompt continue. Other
+      // agents must get nothing on stdout, since plain stdout becomes prompt context.
+      if (payload?.hook_event_name === 'beforeSubmitPrompt') process.stdout.write('{"continue": true}\n');
       return;
     }
     case 'mcp': {

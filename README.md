@@ -38,3 +38,28 @@ Any MCP client can run `node /path/to/vexon-engine/bin/vexon.js mcp`. It exposes
 
 **Until secret scrubbing lands (M4), do not capture secrets.** Captured text is
 written to disk as is.
+
+## Capture from Codex and Cursor
+
+Codex: add to `~/.codex/hooks.json` (run `/hooks` in Codex to review and trust it).
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [ { "type": "command", "command": "node /path/to/vexon-engine/bin/vexon.js capture" } ] }
+    ]
+  }
+}
+```
+
+Cursor: add to `~/.cursor/hooks.json`. The command answers `{"continue": true}`, as Cursor expects.
+
+```json
+{
+  "version": 1,
+  "hooks": {
+    "beforeSubmitPrompt": [ { "command": "node /path/to/vexon-engine/bin/vexon.js capture" } ]
+  }
+}
+```
