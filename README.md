@@ -22,9 +22,9 @@ in the store. If the model fails to load, search falls back to keywords.
 ## Quick start
 
 ```sh
-npx vexon init                      # creates ~/.vexon (notes, config, history)
-npx vexon note "Staging DB port" "The staging database runs on port 5433." --tag ops
-npx vexon recall "where is staging"  # best matches, trimmed to the token budget
+npx @getvexon/vexon init                      # creates ~/.vexon (notes, config, history)
+npx @getvexon/vexon note "Staging DB port" "The staging database runs on port 5433." --tag ops
+npx @getvexon/vexon recall "where is staging"  # best matches, trimmed to the token budget
 ```
 
 Notes are plain Markdown files in `~/.vexon/notes/`. Edit them with any editor.

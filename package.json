@@ -1,5 +1,5 @@
 {
-  "name": "vexon",
+  "name": "@getvexon/vexon",
   "version": "0.0.1",
   "description": "Local-first memory for AI agents.",
   "license": "MIT",
