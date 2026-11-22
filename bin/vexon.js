@@ -12,6 +12,8 @@ import { findProposals, writeProposals, listProposals } from '../src/dream.js';
 import { applyMerge, undoLast, addedLines } from '../src/apply.js';
 import { rm } from 'node:fs/promises';
 import { serveStdio } from '../src/mcp.js';
+import { wireClients } from '../src/wire.js';
+import { fileURLToPath } from 'node:url';
 import { readFile } from 'node:fs/promises';
 
 const args = process.argv.slice(2);
@@ -41,7 +43,7 @@ async function rankHits(dir, notes, query, limit) {
 }
 
 const USAGE = `usage:
-  vexon init [--dir <path>]              create the store (default ~/.vexon)
+  vexon init [--dir <path>] [--no-clients]  create the store (default ~/.vexon) and register MCP with detected clients
   vexon note "<title>" [text] [--tag t]  save a note
   vexon list                             list saved notes
   vexon recall "<query>" [--limit n]     best notes for a query, within the token budget
@@ -59,6 +61,18 @@ async function main() {
     case 'init': {
       await init(dir);
       console.log(`vexon store ready at ${dir}`);
+      if (args.includes('--no-clients')) return;
+      const isDefault = dir === join(homedir(), '.vexon');
+      const results = await wireClients({
+        home: homedir(),
+        binPath: fileURLToPath(import.meta.url),
+        dir: isDefault ? undefined : dir,
+      });
+      if (!results.length) console.log('no agent clients detected; add the MCP server by hand (see README)');
+      for (const r of results) {
+        const detail = r.reason ? ` (${r.reason})` : '';
+        console.log(`${r.client}: ${r.status} ${r.path}${detail}`);
+      }
       return;
     }
     case 'note': {

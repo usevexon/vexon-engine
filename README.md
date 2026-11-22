@@ -30,6 +30,18 @@ npx @getvexon/vexon recall "where is staging"  # best matches, trimmed to the to
 Notes are plain Markdown files in `~/.vexon/notes/`. Edit them with any editor.
 Set `VEXON_DIR` or pass `--dir <path>` to use another folder.
 
+## Setup
+
+`vexon init` creates the store, then registers the MCP server with the agent clients it finds:
+
+- **Claude Code**: `mcpServers.vexon` in `~/.claude.json`
+- **Cursor**: `mcpServers.vexon` in `~/.cursor/mcp.json`
+- **Codex**: prints the `codex mcp add` command, because its config is TOML
+
+Existing keys are kept. The first change to a file saves a copy as `<file>.vexon-bak`.
+Run `vexon init --no-clients` to skip this step. The entry points at the absolute path of
+the installed `bin/vexon.js`, so if you move or update the package, run `vexon init` again.
+
 ## Capture from Claude Code
 
 Add this to `~/.claude/settings.json`. Only prompts that start with `remember:` are saved.
