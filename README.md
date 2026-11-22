@@ -49,8 +49,8 @@ Add this to `~/.claude/settings.json`. Only prompts that start with `remember:` 
 Any MCP client can run `node /path/to/vexon-engine/bin/vexon.js mcp`. It exposes
 `vexon_recall` and `vexon_capture`.
 
-**Until secret scrubbing lands (M4), do not capture secrets.** Captured text is
-written to disk as is.
+Captured text is scrubbed for known secret patterns before it is written. Scrubbing
+is pattern-based, so do not capture secrets on purpose.
 
 ## Capture from Codex and Cursor
 
