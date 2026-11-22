@@ -1,6 +1,6 @@
 {
   "name": "@getvexon/vexon",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Local-first memory for AI agents.",
   "license": "MIT",
   "type": "module",
